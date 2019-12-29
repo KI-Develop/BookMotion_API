@@ -35,7 +35,6 @@ export async function getBookCollection(userId: string) {
     .collection('books')
     .where('userId', '==', userId)
     .get()
-  console.log('型チェック' + typeof snapShot)
   return snapShot
 }
 
