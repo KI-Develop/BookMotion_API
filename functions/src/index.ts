@@ -87,11 +87,13 @@ export const deleteUser = functions.auth.user().onDelete(async user => {
 })
 
 export async function getGoogleBooks(keyword: string): Promise<any> {
-  const res = await axios.get(
-    'https://www.googleapis.com/books/v1/volumes?q=' +
-      keyword +
-      '&maxResults=40'
-  )
+  const url = 'https://www.googleapis.com/books/v1/volumes'
+  const res = await axios.get(url, {
+    params: {
+      q: keyword,
+      maxResults: 40
+    }
+  })
   return res
 }
 
@@ -105,26 +107,32 @@ export const googleBooksApi = functions.https.onRequest(
       const keyword: string = request.query.keyword
 
       await getGoogleBooks(keyword).then(res => {
-        for (const [index, item] of res.data.items.entries()) {
-          if (item.volumeInfo) {
-            items.push({
-              selfLink: item.selfLink,
-              title: item.volumeInfo.title || '',
-              authors: item.volumeInfo.authors || [],
-              description: item.volumeInfo.description || '',
-              publishedDate: item.volumeInfo.publishedDate || '',
-              publisher: item.volumeInfo.publisher || '',
-              totalPageCount: item.volumeInfo.pageCount || 0
-            })
+        if (res.data.items) {
+          for (const [index, item] of res.data.items.entries()) {
+            if (item.volumeInfo) {
+              items.push({
+                selfLink: item.selfLink,
+                title: item.volumeInfo.title || '',
+                authors: item.volumeInfo.authors || [],
+                description: item.volumeInfo.description || '',
+                publishedDate: item.volumeInfo.publishedDate || '',
+                publisher: item.volumeInfo.publisher || '',
+                totalPageCount: item.volumeInfo.pageCount || 0
+              })
 
-            if (item.volumeInfo.imageLinks) {
-              items[index].bookImage = item.volumeInfo.imageLinks.thumbnail
+              if (item.volumeInfo.imageLinks) {
+                items[index].bookImage = item.volumeInfo.imageLinks.thumbnail
+              }
             }
           }
         }
       })
       //TODO: firestoreからselfLinkが一致しているかを条件にして、一致していた場合は、重複していることがわかるようにパラメーターをつける.
-      response.status(200).send(items)
+      if (items.length) {
+        response.status(200).send(items)
+      } else {
+        response.status(200).send('No items')
+      }
     }
   }
 )
