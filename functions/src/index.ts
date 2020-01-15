@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import axios from 'axios'
+import { HttpsError } from 'firebase-functions/lib/providers/https'
 
 admin.initializeApp(functions.config().firebase)
 
@@ -100,11 +101,14 @@ export async function getGoogleBooks(keyword: string): Promise<any> {
 export const googleBooksApi = functions.https.onCall(async (data, context) => {
   const keyword: string = data.keyword
   // TODO: 認証してる人のみ返すようにする
-  // const uid = context.auth ? context.auth.uid : ""
+  const uid = context.auth ? context.auth.uid : ''
   const items: SearchData[] = []
 
+  // TODO: 認証されていない場合はHttpsError
+  console.log(uid)
+
   if (keyword === undefined && !keyword) {
-    return { msg: 'keyword is undefined' }
+    throw new HttpsError('invalid-argument', 'data.keyword is undefined')
   } else {
     await getGoogleBooks(keyword).then(res => {
       if (res.data.items) {
